@@ -2,7 +2,7 @@
 
 ## **Link Heroku**
 
-https://dev-db-challenge8-adrian.herokuapp.com/
+https://challenge-8-ardana.herokuapp.com/
 
 
 Di dalam repository ini terdapat implementasi API dari Binar Car Rental.
