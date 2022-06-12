@@ -1,12 +1,10 @@
-const {
-  NotFoundError,
-} = require('../errors');
+const { NotFoundError } = require("../errors");
 
 class ApplicationController {
   handleGetRoot = (req, res) => {
     res.status(200).json({
-      status: 'OK',
-      message: 'BCR API is up and running!',
+      status: "OK",
+      message: "BCR API is up and running!",
     });
   };
 
@@ -22,7 +20,7 @@ class ApplicationController {
     });
   };
 
-  handleError = (err, req, res, next) => {
+  handleError = (err, req, res) => {
     res.status(500).json({
       error: {
         name: err.name,
@@ -32,18 +30,14 @@ class ApplicationController {
     });
   };
 
-  getOffsetFromRequest = (req) => {
-    const {
-      page = 1, pageSize = 10,
-    } = req.query;
+  getOffsetFromRequest(req) {
+    const { page = 1, pageSize = 10 } = req.query;
     const offset = (page - 1) * pageSize;
     return offset;
-  };
+  }
 
-  buildPaginationObject = (req, count) => {
-    const {
-      page = 1, pageSize = 10,
-    } = req.query;
+  buildPaginationObject(req, count) {
+    const { page = 1, pageSize = 10 } = req.query;
     const pageCount = Math.ceil(count / pageSize);
     return {
       page,
@@ -51,7 +45,8 @@ class ApplicationController {
       pageSize,
       count,
     };
-  };
+  }
 }
 
 module.exports = ApplicationController;
+

@@ -1,12 +1,6 @@
-const ApplicationController = require('./ApplicationController');
-const {
- EmailNotRegisteredError,
- InsufficientAccessError,
- RecordNotFoundError,
- WrongPasswordError,
- EmailAlreadyTakenError,
-} = require('../errors');
-const { JWT_SIGNATURE_KEY } = require('../../config/application');
+const ApplicationController = require("./ApplicationController");
+const { EmailNotRegisteredError, InsufficientAccessError, NotFoundError, WrongPasswordError, EmailAlreadyTakenError } = require("../errors");
+const { JWT_SIGNATURE_KEY } = require("../../config/application");
 
 class AuthenticationController extends ApplicationController {
   constructor({
@@ -23,40 +17,43 @@ class AuthenticationController extends ApplicationController {
   }
 
   accessControl = {
-    PUBLIC: 'PUBLIC',
-    ADMIN: 'ADMIN',
-    CUSTOMER: 'CUSTOMER',
-  };
+    PUBLIC: "PUBLIC",
+    ADMIN: "ADMIN",
+    CUSTOMER: "CUSTOMER",
+  }
 
-  authorize = (rolename) => (req, res, next) => {
+  authorize =(rolename) => {
+    return (req, res, next) => {
       try {
-        const token = req.headers.authorization?.split('Bearer ')[1];
-        const payload = this.decodeToken(token);
+        const token = req.headers.authorization?.split("Bearer ")[1];
+        const payload = this.decodeToken(token)
 
-        if (!!rolename && rolename !== payload.role.name) {
-        throw new InsufficientAccessError(payload?.role?.name);
-        }
+        if (!!rolename && rolename != payload.role.name)
+          throw new InsufficientAccessError(payload?.role?.name);
 
         req.user = payload;
         next();
-      } catch (err) {
+      }
+
+      catch(err) {
         res.status(401).json({
           error: {
             name: err.name,
             message: err.message,
             details: err.details || null,
-          },
-        });
+          }
+        })
       }
-    };
+    }
+  }
 
   handleLogin = async (req, res, next) => {
     try {
       const email = req.body.email.toLowerCase();
-      const { password } = req.body;
+      const password = req.body.password;
       const user = await this.userModel.findOne({
-        where: { email },
-        include: [{ model: this.roleModel, attributes: ['id', 'name'] }],
+        where: { email, },
+        include: [{ model: this.roleModel, attributes: [ "id", "name", ], }]
       });
 
       if (!user) {
@@ -77,18 +74,20 @@ class AuthenticationController extends ApplicationController {
 
       res.status(201).json({
         accessToken,
-      });
-    } catch (err) {
+      })
+    }
+
+    catch(err) {
       next(err);
     }
-  };
+  }
 
   handleRegister = async (req, res, next) => {
     try {
-      const { name } = req.body;
+      const name = req.body.name;
       const email = req.body.email.toLowerCase();
-      const { password } = req.body;
-      const existingUser = await this.userModel.findOne({ where: { email } });
+      const password = req.body.password;
+      let existingUser = await this.userModel.findOne({ where: { email, }, });
 
       if (existingUser) {
         const err = new EmailAlreadyTakenError(email);
@@ -97,7 +96,7 @@ class AuthenticationController extends ApplicationController {
       }
 
       const role = await this.roleModel.findOne({
-        where: { name: this.accessControl.CUSTOMER },
+        where: { name: this.accessControl.CUSTOMER }
       });
 
       const user = await this.userModel.create({
@@ -105,39 +104,42 @@ class AuthenticationController extends ApplicationController {
         email,
         encryptedPassword: this.encryptPassword(password),
         roleId: role.id,
-      });
+      }) 
 
       const accessToken = this.createTokenFromUser(user, role);
 
       res.status(201).json({
         accessToken,
-      });
-    } catch (err) {
+      })
+    }
+
+    catch(err) {
       next(err);
     }
-  };
+  }
 
   handleGetUser = async (req, res) => {
     const user = await this.userModel.findByPk(req.user.id);
 
     if (!user) {
-      const err = new RecordNotFoundError(this.userModel.name);
-      res.status(404).json(err);
+      const err = new NotFoundError(this.userModel.name);
+      res.status(404).json(err)
       return;
     }
 
-    const role = await this.roleModel.findByPk(user.roleId);
+    const role = await this.roleModel.findByPk(user.roleId); 
 
     if (!role) {
-      const err = new RecordNotFoundError(this.roleModel.name);
-      res.status(404).json(err);
+      const err = new NotFoundError(this.roleModel.name);
+      res.status(404).json(err)
       return;
     }
 
     res.status(200).json(user);
-  };
+  }
 
-  createTokenFromUser = (user, role) => this.jwt.sign({
+  createTokenFromUser = (user, role) => {
+    return this.jwt.sign({
       id: user.id,
       name: user.name,
       email: user.email,
@@ -145,18 +147,21 @@ class AuthenticationController extends ApplicationController {
       role: {
         id: role.id,
         name: role.name,
-      },
+      }
     }, JWT_SIGNATURE_KEY);
+  }
 
   decodeToken(token) {
     return this.jwt.verify(token, JWT_SIGNATURE_KEY);
   }
 
-  encryptPassword = (password) => this.bcrypt.hashSync(password, 10);
+  encryptPassword = (password) => {
+    return this.bcrypt.hashSync(password, 10);
+  }
 
   verifyPassword = (password, encryptedPassword) => {
-    this.bcrypt.compareSync(password, encryptedPassword);
-  };
+    return this.bcrypt.compareSync(password, encryptedPassword)
+  }
 }
 
 module.exports = AuthenticationController;
